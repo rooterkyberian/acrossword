@@ -7,6 +7,7 @@ import numpy
 def _encode(c):
     return ord(c)
 
+
 def _decode(b):
     return chr(b)
 
@@ -17,6 +18,7 @@ class Crossword:
             board,
     ):
         self.board = board
+        self.word_placements = {}  # { word: (y, x, vertical), ... }
 
     @classmethod
     def empty(
@@ -36,6 +38,8 @@ class Crossword:
     ):
         """
 
+        TODO: use custom exceptions instead of ValueError
+
         :param word: w
         :param pos: (y, x) to start word from
         :param vertical:
@@ -45,11 +49,11 @@ class Crossword:
         assert len(word) > 1, (
             "Word cannot contain less than 2 characters in a crossword"
         )
-        x, y = pos
+        y, x = pos
 
-        board = self.board
+        board = numpy.copy(self.board)
         if vertical:  # make UP new LEFT
-            board = numpy.rot90(board, axes=(1,0))
+            board = numpy.rot90(board, axes=(1, 0))
             board = numpy.flip(board, 0)
             y, x = x, y
 
@@ -57,18 +61,54 @@ class Crossword:
             raise ValueError("Word would exceed board bounds")
 
         # check if some word does not already exist at these coordinates
-        if x - 1 > 0 and self.board[x-1]:
+        if x - 1 > 0 and self.board[y][x - 1]:
             raise ValueError("Word would start right after another word")
         if len(word) + x + 1 < board.shape[1] and board[y][x]:
             raise ValueError("Word would start right before another word")
 
-        for cur_x, c in enumerate(word, start=x):
-            board[y][cur_x] = _encode(c)
+        encoded_word = [_encode(c) for c in word]
+        for cur_x, c in enumerate(encoded_word, start=x):
+            c_on_table = board[y][cur_x]
+            if c_on_table and c != c_on_table:
+                raise ValueError(
+                    f"Word doesn't match {_decode(c_on_table)}!={_decode(c)}"
+                )
+            if not c_on_table:
+                board[y][cur_x] = c
 
         if vertical:  # revert rotation
             board = numpy.rot90(board)
             board = numpy.flip(board, 0)
+            y, x = x, y
+        self.word_placements[word] = (y, x, vertical)
         self.board = board
+
+    @staticmethod
+    def _remove_empty_rows(board):
+        """
+        Remove empty rows from board
+
+        :param board:
+        :return:
+        """
+        board_height = board.shape[0]
+        for first_non_empty in range(board_height):
+            if numpy.any(board[first_non_empty]):
+                break
+        for last_non_empty in range(board_height - 1, -1, -1):
+            if numpy.any(board[last_non_empty]):
+                break
+        return board[first_non_empty:last_non_empty + 1]
+
+    def crop(self):
+        """
+        Trim empty spaces out of the crossword
+        """
+        board = self.board
+        board = self._remove_empty_rows(board)
+        board = numpy.rot90(board)
+        board = self._remove_empty_rows(board)
+        self.board = numpy.rot90(board, axes=(1, 0))
 
 
 def dumps(crossword, empty=' '):
