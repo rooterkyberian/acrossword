@@ -84,18 +84,16 @@ class Crossword:
         self.board = board
 
     @staticmethod
-    def _remove_empty_rows(board):
+    def _remove_empty_rows(board: numpy.ndarray) -> numpy.ndarray:
         """
         Remove empty rows from board
-
-        :param board:
-        :return:
         """
         board_height = board.shape[0]
+        first_non_empty = last_non_empty = 0  # init only needed if height == 0
         for first_non_empty in range(board_height):
             if numpy.any(board[first_non_empty]):
                 break
-        for last_non_empty in range(board_height - 1, -1, -1):
+        for last_non_empty in range(board_height - 1, first_non_empty - 1, -1):
             if numpy.any(board[last_non_empty]):
                 break
         return board[first_non_empty:last_non_empty + 1]
