@@ -42,6 +42,20 @@ def test_crossword_write_word_vertically():
     assert cw_5x6.word_placements == {"cat": (2, 1, True)}
 
 
+def test_crossword_multiple_writes():
+    cw = crossword.Crossword.empty((3, 3))
+    cw.write('cat', pos=(0, 2), vertical=True)
+    cw.write('hat', pos=(2, 0), vertical=False)
+    cw.write('mac', pos=(0, 0), vertical=False)
+
+    assert cw == crossword.loads(
+        'mac\n'
+        '  a\n'
+        'hat\n'
+    )
+    assert cw.letter_overlaps == 2
+
+
 def test_crossword_shrink():
     bloated_crossword = crossword.loads(
         '      \n'

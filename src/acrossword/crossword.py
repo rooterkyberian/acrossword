@@ -19,6 +19,7 @@ class Crossword:
     ):
         self.board = board
         self.word_placements = {}  # { word: (y, x, vertical), ... }
+        self.letter_overlaps = 0
 
     @classmethod
     def empty(
@@ -51,6 +52,7 @@ class Crossword:
         )
         y, x = pos
 
+        matched_chars = 0
         board = numpy.copy(self.board)
         if vertical:  # make UP new LEFT
             board = numpy.rot90(board, axes=(1, 0))
@@ -75,6 +77,8 @@ class Crossword:
                 )
             if not c_on_table:
                 board[y][cur_x] = c
+            else:
+                matched_chars +=1
 
         if vertical:  # revert rotation
             board = numpy.rot90(board)
@@ -82,6 +86,7 @@ class Crossword:
             y, x = x, y
         self.word_placements[word] = (y, x, vertical)
         self.board = board
+        self.letter_overlaps += matched_chars
 
     @staticmethod
     def _remove_empty_rows(board: numpy.ndarray) -> numpy.ndarray:
