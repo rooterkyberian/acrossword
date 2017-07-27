@@ -72,3 +72,17 @@ def test_crossword_shrink():
         '  a\n'
         'hat\n'
     )
+
+
+def test_crossword_getitem():
+    cw_txt = (
+        'j  \n'
+        'e  \n'
+        'żył\n'
+    )
+    cw = crossword.loads(cw_txt)
+    for y, line in enumerate(cw_txt.splitlines()):
+        for x, c in enumerate(line):
+            if c == ' ':
+                c = '\x00'
+            assert cw[y, x] == c

@@ -1,5 +1,5 @@
 import io
-import typing
+import typing as t
 
 import numpy
 
@@ -24,17 +24,20 @@ class Crossword:
     @classmethod
     def empty(
             cls,
-            maxsize: typing.Tuple = (100, 100)
+            maxsize: t.Tuple[int, int] = (100, 100)
     ):
         return cls(numpy.zeros(maxsize, dtype=numpy.uint32))
 
     def __eq__(self, other):
         return numpy.array_equal(self.board, other.board)
 
+    def __getitem__(self, pos):
+        return _decode(self.board[pos])
+
     def write(
             self,
             word: str,
-            pos: typing.Tuple[int, int],
+            pos: t.Tuple[int, int],
             vertical: bool = False,
     ):
         """
