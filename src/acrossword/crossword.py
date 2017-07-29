@@ -4,11 +4,11 @@ import typing as t
 import numpy
 
 
-def _encode(c):
+def encode(c):
     return ord(c)
 
 
-def _decode(b):
+def decode(b):
     return chr(b)
 
 
@@ -32,7 +32,7 @@ class Crossword:
         return numpy.array_equal(self.board, other.board)
 
     def __getitem__(self, pos):
-        return _decode(self.board[pos])
+        return decode(self.board[pos])
 
     def write(
             self,
@@ -71,17 +71,17 @@ class Crossword:
         if len(word) + x + 1 < board.shape[1] and board[y][len(word) + x + 1]:
             raise ValueError("Word would start right after another word")
 
-        encoded_word = [_encode(c) for c in word]
+        encoded_word = [encode(c) for c in word]
         for cur_x, c in enumerate(encoded_word, start=x):
             c_on_table = board[y][cur_x]
             if c_on_table and c != c_on_table:
                 raise ValueError(
-                    f"Word doesn't match {_decode(c_on_table)}!={_decode(c)}"
+                    f"Word doesn't match {decode(c_on_table)}!={decode(c)}"
                 )
             if not c_on_table:
                 board[y][cur_x] = c
             else:
-                matched_chars +=1
+                matched_chars += 1
 
         if vertical:  # revert rotation
             board = numpy.flip(board, 1)
@@ -121,7 +121,7 @@ def dumps(crossword, empty=' '):
     dump = io.StringIO()
     for row in crossword.board:
         for c in row:
-            dump.write(_decode(c) if c else empty)
+            dump.write(decode(c) if c else empty)
         dump.write('\n')
     return dump.getvalue()
 
@@ -145,7 +145,7 @@ def loads(crossword_string, empty=' '):
                 )
             rows.append([])
         else:
-            rows[-1].append(_encode(c) if c != empty else 0)
+            rows[-1].append(encode(c) if c != empty else 0)
 
     while rows and not rows[-1]:  # remove empty trailing rows
         rows.pop()
