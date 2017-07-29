@@ -58,8 +58,8 @@ class Crossword:
         matched_chars = 0
         board = numpy.copy(self.board)
         if vertical:  # make UP new LEFT
-            board = numpy.rot90(board, axes=(1, 0))
-            board = numpy.flip(board, 0)
+            board = numpy.rot90(board, k=-1)
+            board = numpy.flip(board, 1)
             y, x = x, y
 
         if y >= board.shape[1] or len(word) + x > board.shape[1]:
@@ -67,9 +67,9 @@ class Crossword:
 
         # check if some word does not already exist at these coordinates
         if x - 1 > 0 and self.board[y][x - 1]:
-            raise ValueError("Word would start right after another word")
-        if len(word) + x + 1 < board.shape[1] and board[y][x]:
             raise ValueError("Word would start right before another word")
+        if len(word) + x + 1 < board.shape[1] and board[y][len(word) + x + 1]:
+            raise ValueError("Word would start right after another word")
 
         encoded_word = [_encode(c) for c in word]
         for cur_x, c in enumerate(encoded_word, start=x):
@@ -84,8 +84,8 @@ class Crossword:
                 matched_chars +=1
 
         if vertical:  # revert rotation
+            board = numpy.flip(board, 1)
             board = numpy.rot90(board)
-            board = numpy.flip(board, 0)
             y, x = x, y
         self.word_placements[word] = (y, x, vertical)
         self.board = board
