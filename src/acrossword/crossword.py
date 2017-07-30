@@ -12,6 +12,10 @@ def decode(b):
     return chr(b)
 
 
+class WordWriteError(Exception):
+    pass
+
+
 class Crossword:
     def __init__(
             self,
@@ -20,6 +24,7 @@ class Crossword:
         self.board = board
         self.word_placements = {}  # { word: (y, x, vertical), ... }
         self.letter_overlaps = 0
+        self.potential_spots = set()
 
     @classmethod
     def empty(
@@ -42,8 +47,6 @@ class Crossword:
     ):
         """
 
-        TODO: use custom exceptions instead of ValueError
-
         :param word: w
         :param pos: (y, x) to start word from
         :param vertical:
@@ -63,33 +66,37 @@ class Crossword:
             y, x = x, y
 
         if y >= board.shape[1] or len(word) + x > board.shape[1]:
-            raise ValueError("Word would exceed board bounds")
+            raise WordWriteError("Word would exceed board bounds")
 
         # check if some word does not already exist at these coordinates
         if x - 1 > 0 and self.board[y][x - 1]:
-            raise ValueError("Word would start right before another word")
+            raise WordWriteError("Word would start right after another word")
         if len(word) + x + 1 < board.shape[1] and board[y][len(word) + x + 1]:
-            raise ValueError("Word would start right after another word")
+            raise WordWriteError("Word would end right before another word")
 
+        positions = set()
         encoded_word = [encode(c) for c in word]
         for cur_x, c in enumerate(encoded_word, start=x):
             c_on_table = board[y][cur_x]
             if c_on_table and c != c_on_table:
-                raise ValueError(
+                raise WordWriteError(
                     f"Word doesn't match {decode(c_on_table)}!={decode(c)}"
                 )
             if not c_on_table:
                 board[y][cur_x] = c
             else:
                 matched_chars += 1
+            positions.add((y, cur_x))
 
         if vertical:  # revert rotation
             board = numpy.flip(board, 1)
             board = numpy.rot90(board)
             y, x = x, y
+            positions = {(p_x, p_y) for p_y, p_x in positions}
         self.word_placements[word] = (y, x, vertical)
         self.board = board
         self.letter_overlaps += matched_chars
+        self.potential_spots |= {(p, not vertical) for p in positions}
 
     @staticmethod
     def _remove_empty_rows(board: numpy.ndarray) -> numpy.ndarray:

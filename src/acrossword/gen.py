@@ -2,10 +2,16 @@ import copy
 import itertools
 import random
 
-import numpy
-
 from acrossword import crossword
 from acrossword.glossary import Glossary
+
+
+def indexes(word: str, c: str):
+    return (
+        index
+        for index, word_c in enumerate(word)
+        if word_c == c
+    )
 
 
 def random_gen(
@@ -14,8 +20,14 @@ def random_gen(
         r: random.Random = random,
 ) -> crossword.Crossword:
     if not size:
-        max_combo_length = max(len(word) for word in glossary) * len(glossary)
-        size = 2 * (max_combo_length,)
+        # assume longest words would line up in the same axis
+        max_combo_length = sum(
+            list(
+                sorted(len(word) for word in glossary)
+            )[:len(glossary) // 2]
+        )
+        # and as we are starting from a center, so twice the space is needed
+        size = 2 * (2 * max_combo_length,)
     glossary = copy.deepcopy(glossary)
     cw = crossword.Crossword.empty(size)
 
@@ -31,15 +43,8 @@ def random_gen(
     spots_checked = set()
     fail_streak = 0
     while glossary:
-        potential_positions = numpy.argwhere(cw.board)
-
-        spots = {
-            (tuple(pos), rotated)
-            for pos, rotated in itertools.chain.from_iterable(
-            zip(x, (False, True))
-            for x in itertools.permutations(potential_positions, 2)
-        )
-        }
+        # find potential spots for a word start
+        spots = cw.potential_spots
         spots -= spots_checked
         if not spots:
             break
@@ -55,20 +60,30 @@ def random_gen(
             continue
 
         try:
-            offset = word.index(c)
+            offset = r.choice(list(
+                indexes(word, c)
+            ))
             if vertical:
                 pos = pos[0] - offset, pos[1]
             else:
                 pos = pos[0], pos[1] - offset
             cw.write(word, pos=pos, vertical=vertical)
-        except ValueError as e:
+        except crossword.WordWriteError:
             glossary.add(word)
             fail_streak += 1
         else:
             fail_streak -= 1
-            spots_checked.add((pos, vertical))
+            taken_spots = [
+                (pos[0] + y_offset, pos[1] + x_offset)
+                for y_offset, x_offset in
+                itertools.combinations_with_replacement(range(-1, 2), r=2)
+            ]
 
-        if fail_streak >= 10:
+            for surrounding_pos in taken_spots:
+                spots_checked.add((surrounding_pos, True))
+                spots_checked.add((surrounding_pos, False))
+
+        if fail_streak >= 100:
             break
 
     return cw
