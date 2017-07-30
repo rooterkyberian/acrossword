@@ -1,3 +1,5 @@
+import pytest
+
 from acrossword import crossword
 
 crossword_string_10x5 = '\n'.join([' ' * 10] * 5) + '\n'
@@ -56,7 +58,16 @@ def test_crossword_multiple_writes():
     assert cw.letter_overlaps == 2
 
 
-def test_crossword_shrink():
+def test_crossword_neighborhood_protection():
+    for vertical in (False, True):
+        cw = crossword.Crossword.empty((5, 5))
+        cw.write('cat', pos=(0, 0), vertical=vertical)
+        with pytest.raises(crossword.WordWriteError) as exc_info:
+            cw.write('mac', pos=(1, 1), vertical=vertical)
+        assert str(exc_info.value) == "Neighborhood is too crowded"
+
+
+def test_crossword_crop():
     bloated_crossword = crossword.loads(
         '      \n'
         '   c  \n'

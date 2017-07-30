@@ -1,12 +1,13 @@
 import copy
 import itertools
 import random
+import typing as t
 
 from acrossword import crossword
 from acrossword.glossary import Glossary
 
 
-def indexes(word: str, c: str):
+def _indexes(word: str, c: str):
     return (
         index
         for index, word_c in enumerate(word)
@@ -14,11 +15,11 @@ def indexes(word: str, c: str):
     )
 
 
-def random_gen(
+def random_generator(
         glossary: Glossary,
         size=None,
         r: random.Random = random,
-) -> crossword.Crossword:
+) -> t.Generator[crossword.Crossword, None, None]:
     if not size:
         # assume longest words would line up in the same axis
         max_combo_length = sum(
@@ -39,9 +40,9 @@ def random_gen(
         pos=center,
         vertical=bool(r.getrandbits(1)),
     )
+    yield cw
 
     spots_checked = set()
-    fail_streak = 0
     while glossary:
         # find potential spots for a word start
         spots = cw.potential_spots
@@ -61,7 +62,7 @@ def random_gen(
 
         try:
             offset = r.choice(list(
-                indexes(word, c)
+                _indexes(word, c)
             ))
             if vertical:
                 pos = pos[0] - offset, pos[1]
@@ -70,9 +71,7 @@ def random_gen(
             cw.write(word, pos=pos, vertical=vertical)
         except crossword.WordWriteError:
             glossary.add(word)
-            fail_streak += 1
         else:
-            fail_streak -= 1
             taken_spots = [
                 (pos[0] + y_offset, pos[1] + x_offset)
                 for y_offset, x_offset in
@@ -83,7 +82,29 @@ def random_gen(
                 spots_checked.add((surrounding_pos, True))
                 spots_checked.add((surrounding_pos, False))
 
-        if fail_streak >= 100:
-            break
+        yield cw
 
+
+def gen_limited_fails(gen, max_fails):
+    crossovers = -1
+    fail_streak = 0
+    cw = None
+    for cw in gen:
+        if cw.letter_overlaps > crossovers:
+            fail_streak -= 1
+        else:
+            fail_streak += 1
+        crossovers = cw.letter_overlaps
+        if fail_streak > max_fails:
+            break
     return cw
+
+
+def random_gen(
+        *args,
+        **kwargs
+) -> crossword.Crossword:
+    return gen_limited_fails(
+        random_generator(*args, **kwargs),
+        max_fails=1000,
+    )

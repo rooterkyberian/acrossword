@@ -1,4 +1,5 @@
 import io
+import itertools
 import typing as t
 
 import numpy
@@ -24,7 +25,7 @@ class Crossword:
         self.board = board
         self.word_placements = {}  # { word: (y, x, vertical), ... }
         self.letter_overlaps = 0
-        self.potential_spots = set()
+        self.potential_spots = set()  # potential crossover spots
 
     @classmethod
     def empty(
@@ -86,6 +87,18 @@ class Crossword:
                 board[y][cur_x] = c
             else:
                 matched_chars += 1
+
+            # ensure we don't put words too close to each other
+            if any(
+                    numpy.count_nonzero(quarter) == 4
+                    for quarter in (
+                        board[y - 1:y + 1, cur_x - 1: cur_x + 1],
+                        board[y - 1:y + 1, cur_x: cur_x + 2],
+                        board[y:y + 2, cur_x - 1: cur_x + 1],
+                        board[y:y + 2, cur_x: cur_x + 2],
+                    )
+            ):
+                raise WordWriteError("Neighborhood is too crowded")
             positions.add((y, cur_x))
 
         if vertical:  # revert rotation
@@ -97,6 +110,19 @@ class Crossword:
         self.board = board
         self.letter_overlaps += matched_chars
         self.potential_spots |= {(p, not vertical) for p in positions}
+        self.potential_spots -= {(p, vertical) for p in positions}
+        bad_spots = set(itertools.chain.from_iterable(
+            [
+                ((p_y, p_x - 1), True),
+                ((p_y, p_x + 1), True),
+            ] if vertical else
+            [
+                ((p_y - 1, p_x), False),
+                ((p_y + 1, p_x), False),
+            ]
+            for p_y, p_x in positions
+        ))
+        self.potential_spots -= bad_spots
 
     @staticmethod
     def _remove_empty_rows(board: numpy.ndarray) -> numpy.ndarray:
