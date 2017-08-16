@@ -61,14 +61,14 @@ def test_crossword_multiple_writes():
 def test_crossword_neighborhood_protection():
     for vertical in (False, True):
         cw = crossword.Crossword.empty((5, 5))
-        cw.write('cat', pos=(0, 0), vertical=vertical)
+        cw.write('cat', pos=(1, 0), vertical=vertical)
         with pytest.raises(crossword.WordWriteError) as exc_info:
-            cw.write('mac', pos=(1, 1), vertical=vertical)
+            cw.write('mac', pos=(2, 1), vertical=vertical)
         assert str(exc_info.value) == "We are disturbing neighbors"
 
 
 def test_write_protect_perpendicular():
-    cw = crossword.Crossword.empty((5, 5))
+    cw = crossword.Crossword.empty((10, 5))
     cw.write('cat', pos=(2, 0), vertical=False)
     with pytest.raises(crossword.WordWriteError) as exc_info:
         cw.write('mac', pos=(0, 3), vertical=True)
@@ -78,6 +78,14 @@ def test_write_protect_perpendicular():
     with pytest.raises(crossword.WordWriteError) as exc_info:
         cw.write('cat', pos=(0, 1), vertical=False)
     assert str(exc_info.value) == "Word would end right before another word"
+
+    with pytest.raises(crossword.WordWriteError) as exc_info:
+        cw.write('cat', pos=(0, 1), vertical=False)
+
+    with pytest.raises(crossword.WordWriteError) as exc_info:
+        cw.write('yml', pos=(3, 1), vertical=True)
+        print(crossword.dumps(cw))
+    assert str(exc_info.value) == "Word would start right after another word"
 
 
 def test_crossword_crop():

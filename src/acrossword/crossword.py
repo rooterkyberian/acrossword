@@ -70,7 +70,7 @@ class Crossword:
             raise WordWriteError("Word would exceed board bounds")
 
         # check if some word does not already exist at these coordinates
-        if x - 1 > 0 and self.board[y][x - 1]:
+        if x - 1 >= 0 and board[y][x - 1]:
             raise WordWriteError("Word would start right after another word")
         if len(word) + x < board.shape[1] and board[y][len(word) + x]:
             raise WordWriteError("Word would end right before another word")
