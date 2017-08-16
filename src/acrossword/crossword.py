@@ -72,7 +72,7 @@ class Crossword:
         # check if some word does not already exist at these coordinates
         if x - 1 > 0 and self.board[y][x - 1]:
             raise WordWriteError("Word would start right after another word")
-        if len(word) + x + 1 < board.shape[1] and board[y][len(word) + x + 1]:
+        if len(word) + x < board.shape[1] and board[y][len(word) + x]:
             raise WordWriteError("Word would end right before another word")
 
         positions = set()
@@ -83,6 +83,15 @@ class Crossword:
                 raise WordWriteError(
                     f"Word doesn't match {decode(c_on_table)}!={decode(c)}"
                 )
+
+            # ensure we don't write to cell in neighborhood of
+            # end/beginning of some word
+            if not c_on_table and (
+                    ((y - 1 >= 0) and board[y-1][cur_x]) or
+                    ((y + 1 < board.shape[0]) and board[y + 1][cur_x])
+            ):
+                raise WordWriteError("We are disturbing neighbors")
+
             if not c_on_table:
                 board[y][cur_x] = c
             else:

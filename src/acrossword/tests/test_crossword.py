@@ -64,7 +64,20 @@ def test_crossword_neighborhood_protection():
         cw.write('cat', pos=(0, 0), vertical=vertical)
         with pytest.raises(crossword.WordWriteError) as exc_info:
             cw.write('mac', pos=(1, 1), vertical=vertical)
-        assert str(exc_info.value) == "Neighborhood is too crowded"
+        assert str(exc_info.value) == "We are disturbing neighbors"
+
+
+def test_write_protect_perpendicular():
+    cw = crossword.Crossword.empty((5, 5))
+    cw.write('cat', pos=(2, 0), vertical=False)
+    with pytest.raises(crossword.WordWriteError) as exc_info:
+        cw.write('mac', pos=(0, 3), vertical=True)
+    assert str(exc_info.value) == "We are disturbing neighbors"
+    cw.write('mac', pos=(0, 4), vertical=True)
+
+    with pytest.raises(crossword.WordWriteError) as exc_info:
+        cw.write('cat', pos=(0, 1), vertical=False)
+    assert str(exc_info.value) == "Word would end right before another word"
 
 
 def test_crossword_crop():
