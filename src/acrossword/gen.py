@@ -85,17 +85,24 @@ def random_generator(
         yield cw
 
 
-def gen_limited_fails(gen, max_fails):
+def gen_limited_fails(
+        gen,
+        max_words: int=None,
+        max_fails: int=None,
+):
     crossovers = -1
     fail_streak = 0
     cw = None
     for cw in gen:
+        if max_words is not None and len(cw.word_placements) == max_words:
+            break
+
         if cw.letter_overlaps > crossovers:
             fail_streak -= 1
         else:
             fail_streak += 1
         crossovers = cw.letter_overlaps
-        if fail_streak > max_fails:
+        if max_fails is not None and fail_streak > max_fails:
             break
     return cw
 
