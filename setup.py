@@ -23,7 +23,9 @@ setup(
     author_email='rooter@kyberian.net',
     license='MIT',
     packages=['acrossword'],
+    package_dir={'acrossword': 'src/acrossword'},
     install_requires=[
+        'numpy',
     ],
     setup_requires=[
         'pytest-runner',
